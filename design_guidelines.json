@@ -1,0 +1,187 @@
+{
+  "project_name": "CENTRAL DE CARROCERIA Y PINTURA - Sistema de Recepción e Inventario de Vehículos",
+  "app_context": "SaaS / Internal Tablet-First Automotive Workshop App",
+  "theme_strategy": {
+    "mode": "LIGHT_ONLY",
+    "rationale": "Directly requested by user: 'Tema CLARO, fondo blanco, textos de alto contraste, botones y chips grandes y fáciles de tocar con las manos sucias'. Workshop lighting is varied and mechanics' hands may have grease/dust, needing high contrast and large touch surfaces.",
+    "background": "#FFFFFF",
+    "canvas_background": "#F8FAFC",
+    "surface_cards": "#FFFFFF",
+    "surface_borders": "#0F172A",
+    "border_style": "2px solid #0F172A or 1.5px solid #CBD5E1 for subtle areas"
+  },
+  "brand_identity": {
+    "workshop_name": "CENTRAL DE CARROCERIA Y PINTURA",
+    "short_name": "CCP Taller",
+    "logo_spec": {
+      "shape": "Rhombus (diamond / rombo)",
+      "outer_style": "Black geometric diamond (bg-black text-white)",
+      "text": "CCP",
+      "subtitle": "CARROCERIA Y PINTURA",
+      "monochrome": true,
+      "svg_code": "<div class=\"w-10 h-10 bg-black text-white flex items-center justify-center font-black tracking-widest text-xs rotate-45 rounded-sm shadow-md border border-neutral-800\"><span class=\"-rotate-45 font-mono font-bold\">CCP</span></div>"
+    }
+  },
+  "typography": {
+    "heading_font": "Outfit, system-ui, -apple-system, sans-serif",
+    "body_font": "IBM Plex Sans, -apple-system, BlinkMacSystemFont, sans-serif",
+    "mono_font": "JetBrains Mono, Menlo, monospace",
+    "hierarchy": {
+      "h1_screen_title": "text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-950",
+      "h2_section_title": "text-xl sm:text-2xl font-bold tracking-tight text-slate-900",
+      "h3_step_title": "text-lg sm:text-xl font-bold text-slate-900",
+      "h4_card_title": "text-base sm:text-lg font-bold text-slate-900",
+      "body_large_touch": "text-base sm:text-lg font-medium text-slate-800",
+      "body_standard": "text-sm sm:text-base text-slate-700",
+      "caption_badge": "text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-600"
+    }
+  },
+  "color_palette": {
+    "archetype": "Swiss High-Contrast + Performance Tactical (Monochrome Core + Safety Accents)",
+    "primary_dark": "#0A0A0A",
+    "primary_foreground": "#FFFFFF",
+    "surface_white": "#FFFFFF",
+    "surface_light": "#F8FAFC",
+    "border_strong": "#0F172A",
+    "border_subtle": "#E2E8F0",
+    "text_dominant": "#090A0C",
+    "text_muted": "#475569",
+    "accent_status_en_taller": {
+      "bg": "#FEF3C7",
+      "border": "#D97706",
+      "text": "#92400E",
+      "pill_bg": "#F59E0B"
+    },
+    "accent_status_entregado": {
+      "bg": "#DCFCE7",
+      "border": "#16A34A",
+      "text": "#166534",
+      "pill_bg": "#22C55E"
+    },
+    "damage_marker": {
+      "high": "#DC2626",
+      "medium": "#EA580C",
+      "low": "#CA8A04"
+    },
+    "fuel_level": {
+      "empty": "#EF4444",
+      "quarter": "#F97316",
+      "half": "#EAB308",
+      "three_quarters": "#84CC16",
+      "full": "#22C55E"
+    }
+  },
+  "touch_and_ergonomics": {
+    "workshop_ready_touch_targets": {
+      "primary_buttons": "min-h-[54px] sm:min-h-[60px] px-6 text-base sm:text-lg font-bold rounded-xl active:scale-[0.98]",
+      "wizard_chips_selectable": "min-h-[52px] px-5 py-3 text-sm sm:text-base font-semibold rounded-2xl border-2 transition-all flex items-center justify-between gap-3 shadow-xs",
+      "counter_buttons": "w-11 h-11 sm:w-12 sm:h-12 rounded-xl text-xl font-bold flex items-center justify-center bg-slate-900 text-white hover:bg-slate-800 active:scale-95",
+      "switch_toggles": "min-h-[48px] py-2 px-4 rounded-xl border-2 font-bold",
+      "input_fields": "min-h-[52px] sm:min-h-[56px] text-base sm:text-lg font-medium px-4 border-2 border-slate-300 focus:border-slate-950 rounded-xl bg-white"
+    },
+    "tablet_layout_rules": {
+      "default_orientation": "Landscape & Portrait responsive (optimized for 768px - 1280px screen widths)",
+      "fixed_header_height": "h-20 sm:h-24 px-6 border-b-2 border-slate-900 bg-white sticky top-0 z-40",
+      "sticky_wizard_bottom_bar": "sticky bottom-0 z-30 bg-white/95 backdrop-blur-md border-t-2 border-slate-900 p-4 sm:p-6 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
+    }
+  },
+  "key_components_and_flows": {
+    "auth_flow": {
+      "description": "Google Login for authorized workshop personnel only with fallback test mock credential toggle and whitelist verification",
+      "elements": [
+        "Monochromatic diamond CCP logo with glowing halo border",
+        "Title: 'CENTRAL DE CARROCERIA Y PINTURA'",
+        "Subtitle: 'Sistema de Entrada y Control de Inventario'",
+        "Prominent Google Sign-in button with G-logo (min-h-[56px])",
+        "Demo fast-login chips (e.g., 'Recepción Principal', 'Jefe de Taller', 'Perito de Chapa y Pintura')"
+      ]
+    },
+    "wizard_steps": [
+      {
+        "step": 1,
+        "title": "Datos del Cliente y Vehículo",
+        "description": "Placa, Marca, Modelo, Año, Color, VIN/Chasis, Kilometraje, Nombre del Cliente, Teléfono, Correo, Aseguradora"
+      },
+      {
+        "step": 2,
+        "title": "Nivel de Combustible y Kilometraje",
+        "description": "Selector táctil visual de combustible (Reserva, 1/4, 1/2, 3/4, Lleno) con indicador tipo aguja/barra y confirmación de tablero"
+      },
+      {
+        "step": 3,
+        "title": "Inventario de Entrada (Accesorios y Elementos)",
+        "description": "Chips grandes seleccionables con contadores (+/-): Llave de ruedas, Gato hidráulico, Triángulos, Extintor, Rueda de repuesto, Documentos, Antena, Radio, Tapetes, Copas/Tapacubos, etc."
+      },
+      {
+        "step": 4,
+        "title": "Inspección de Daños & Carrocería",
+        "description": "Diagrama de vehículo interactivo por zonas (Frontal, Lateral Izq, Lateral Der, Trasera, Techo) + Chips de daño (Golpe, Rayón, Pintura saltada, Abolladura, Óxido, Rotura de cristal) con campo de nota opcional inmediata"
+      },
+      {
+        "step": 5,
+        "title": "Registro Fotográfico",
+        "description": "Carga de fotos por categorías guiadas (Frente, Trasera, Lados, Detalle de Daños, Tablero/Km) con visor rápido y botón de eliminar"
+      },
+      {
+        "step": 6,
+        "title": "Resumen & Firmas Digitales",
+        "description": "Resumen completo con botones directos 'Editar este paso', pad de firma digital táctil para cliente y perito/receptor"
+      },
+      {
+        "step": 7,
+        "title": "Vista Previa PDF & Finalización",
+        "description": "Visualizador de PDF oficial 'Hoja de Entrada CCP' con logo en rombo, datos tabulados, sellos y firmas, botón de Descargar PDF, Enviar por Email, y Nueva Entrada"
+      }
+    ],
+    "inventory_management": {
+      "title": "Inventario General de Vehículos",
+      "views": [
+        "Filtros rápidos: 'Todos', 'En Taller', 'Entregados', 'Con seguro'",
+        "Barra de búsqueda universal (placa, cliente, marca, orden #)",
+        "Interruptor rápido En Taller / Entregado con modal de confirmación y fecha/hora de entrega",
+        "Tarjeta o fila de vehículo con datos de alto contraste y enlace a Ficha Detallada"
+      ]
+    },
+    "configuration_module": {
+      "title": "Configuración del Taller",
+      "sections": [
+        "Datos de la empresa (Nombre, CIF/RUT, Dirección, Teléfono, Correo de envíos, Pie de página de orden)",
+        "Estado del servicio de correo (SMTP / API de envío y pruebas)",
+        "Lista de correos y usuarios permitidos (Whitelist Google Auth)"
+      ]
+    }
+  },
+  "image_assets": {
+    "workshop_tablet_inspection": "https://images.pexels.com/photos/6870309/pexels-photo-6870309.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "mechanic_with_car": "https://images.pexels.com/photos/6870317/pexels-photo-6870317.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "workshop_facility": "https://images.unsplash.com/photo-1615906655593-ad0386982a0f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNzl8MHwxfHNlYXJjaHwxfHxjYXIlMjByZXBhaXIlMjB3b3Jrc2hvcHxlbnwwfHx8fDE3OTA5ODQ5NDh8MA&ixlib=rb-4.1.0&q=85"
+  },
+  "testing_attributes": {
+    "rule": "Every interactive and critical element MUST have data-testid in kebab-case.",
+    "samples": [
+      "data-testid='login-google-btn'",
+      "data-testid='nav-new-entry-btn'",
+      "data-testid='nav-inventory-btn'",
+      "data-testid='nav-config-btn'",
+      "data-testid='wizard-next-step-btn'",
+      "data-testid='wizard-prev-step-btn'",
+      "data-testid='chip-item-{id}'",
+      "data-testid='chip-counter-plus-{id}'",
+      "data-testid='chip-counter-minus-{id}'",
+      "data-testid='damage-chip-{id}'",
+      "data-testid='status-toggle-switch'",
+      "data-testid='pdf-download-btn'",
+      "data-testid='new-entry-success-btn'"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Build the application completely in Spanish using clean JavaScript (.js / .jsx) with Lucide-react icons and Tailwind CSS.",
+    "Implement the 7-step wizard with visual progress bar, clear step indicators, and tablet-sized touch chips.",
+    "Ensure high-contrast mode: bright crisp white background (#FFFFFF and #F8FAFC), black/deep slate text (#090A0C), thick solid borders (2px) on active and selectable elements.",
+    "Include simulated Google Authentication with quick role switching, whitelist validation, and user profile display in header.",
+    "Provide interactive vehicle diagram (Top/Front/Rear/Sides) allowing clicking points or selecting body damage zones with notes.",
+    "Include high-fidelity in-app PDF preview modal and downloadable/printable formatted sheet matching official workshop intake sheets with the CCP diamond logo.",
+    "Provide rich sample vehicles in the inventory list with search, filter tabs, En Taller / Entregado toggling, and detail view.",
+    "Store intake records and configuration in localStorage with pre-seeded demo entries so the app is immediately useful out-of-the-box."
+  ]
+}
