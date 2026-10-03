@@ -133,7 +133,7 @@ def _build(entry: dict, taller: dict, photos: list, max_px: int, quality: int) -
         for k, val in vrows[i:i + 4]:
             cells += [P(k, "bb"), P(val or "—")]
         vdata.append(cells)
-    vt = Table(vdata, colWidths=[q * 0.85, q * 1.15] * 4)
+    vt = Table(vdata, colWidths=[q * 1.1, q * 0.9] * 4)
     vt.setStyle(TableStyle([("SPAN", (0, 0), (-1, 0)), ("BACKGROUND", (0, 0), (-1, 0), BLACK),
                             ("BOX", (0, 0), (-1, -1), 1, BLACK), ("INNERGRID", (0, 1), (-1, -1), 0.4, LINE),
                             ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
