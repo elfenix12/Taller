@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 2 — tested the new on-screen signatures + immutable PDF versioning. Backend: 14/14 pytest cases in tests/test_signatures.py pass (preview/create 400 without firmas, create 200 with firmas (pdf_version=1, pdf_label=folio_str, mail_status=no_configurado), invalid png rejected, PUT /entries/{id} 400 without firmas and creates v2 with label '<folio> - v2', GET /versions returns both versions sorted desc, GET /versions/1/pdf byte-identical before/after edit (immutability), GET /entries/{id}/pdf returns latest (differs from v1), legacy entry: GET /pdf and POST /send -> 409, POST /sign creates v1 and second /sign -> 409). Frontend (Playwright): full 8-step wizard with new 'Firmas' step 7 — Resumen button says 'Continuar a firmas', pads data-testid signature-pad-taller/cliente drawable via mouse, 'Ver vista previa del PDF' disabled until both signed, Limpiar clears, cliente card has legal text + prefilled editable client name; going back to step 0 and editing a field clears both signatures (verified assert disabled on re-entry to Firmas); confirm -> success shows '00004'; detail shows versions-list with v1; edit flow -> re-sign -> confirm -> success shows '00004 - v2'; detail now lists v2 + v1; legacy entry (seeded in mongo folio 09002) shows versions-empty + versions-sign-btn; Descargar PDF redirects to /entradas/:id/firmar (sign-entry-page), signing + preview + 'Todo correcto, guardar PDF' returns to detail with v1 listed. Previous iteration regression suite (backend_test.py) remains intact.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_signatures.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/signatures.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SignaturePad: the useEffect that initializes the canvas and attaches touchmove/touchstart passive:false listeners runs only once on mount; if the canvas is resized (e.g., viewport rotation on tablet) the DPR-scaled bitmap and context transform are stale. Consider a ResizeObserver.",
+    "NewEntry.setData wipes firmas on EVERY setData call. In practice this is fine (every edit really does require re-signing), but note it also clears signatures when the user merely re-enters a field with the same value (onChange fires). Minor UX nitpick, matches spec.",
+    "pdf_versions.firmas stores the full base64 PNG of both signatures per version; each version adds ~2x PNG payload to Mongo in addition to the GridFS PDF. For large archives consider referencing the PNGs by hash or dropping them (they are already embedded in the stored PDF).",
+    "get_version uses a conditional spread {** ({'version': v} if v else {})}: if a caller ever passes v=0 it falls through to 'latest', which is probably not intended. Minor.",
+    "No DELETE/undo for pdf_versions (by design) — operations/support staff cannot remove a bad PDF; document this limitation."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_signatures.py"
+  ],
+  "success_rate": {"backend": "100% (14/14 new + 24/24 regression)", "frontend": "100% of critical flows (signatures step, back/edit clears, confirm->v1, edit->v2, legacy->sign->v1)"},
+  "test_credentials": "Created ephemeral admin test.user.adm.1790989728714@example.com (token test_session_admin_1790989728714) and staff test.user.stf.1790989728714@example.com (token test_session_staff_1790989728714). All cleaned up at end along with TEST_ entries, their pdf_versions, GridFS pdfs.files/chunks, allowed_emails, users, sessions. db.counters folio reset to 1. Real entry 00001 preserved.",
+  "seed_data_creation": "Inserted one legacy entry (folio 09002, placas TEST-LEGUI) directly in mongo for legacy flow test; deleted after test.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Signatures/versioning feature is fully covered. Run backend/tests/test_signatures.py together with backend_test.py. Field component spreads data-testid onto the inner <input>/<textarea> directly, so use selectors like 'input[data-testid=\"input-cliente-nombre\"]' (NOT the wrapper descendant form). SignaturePad can be driven with Playwright mouse events; scroll canvas into view before drawing (cliente pad is below the fold on 1280x900). After new entry: step 0 -> 4 nexts to reach step 5 Resumen; summary-preview-btn to step 6 Firmas; sign + wizard-next-step-btn to step 7 Preview; preview-confirm-btn to success. In edit mode (/entradas/:id/editar) NewEntry starts at step 5 directly. Legacy flow uses /entradas/:id/firmar (SignEntry component) with sign-preview-btn then preview-confirm-btn.",
+  "rca of the issue": "N/A — no defects found; all behaviors conform to spec."
+}

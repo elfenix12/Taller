@@ -18,6 +18,12 @@ Recepcionista/personal del taller en tablet; administrador del taller.
 ## Implemented (2026-10-02)
 - Fase 1 completa: auth con allow-list, asistente 7 pasos, fotos comprimidas, vista previa PDF, folio consecutivo, éxito, inventario, detalle/edición, configuración y gestión de usuarios. Correo estructurado pero desactivado. Testing: 24/24 backend, frontend completo OK.
 
+## Implemented (2026-10-03) — Firmas en pantalla
+- Paso "Firmas" (entre Resumen y Vista previa), dos lienzos obligatorios (taller sin nombre; cliente con nombre editable y texto legal), PNG transparente + fecha/hora; se borran si se edita cualquier dato antes de confirmar.
+- PDF firmado inmutable: se genera una vez al confirmar y se guarda (GridFS `pdfs` + colección `pdf_versions`). Descargar/reenviar entregan el archivo guardado. Editar crea versión nueva ("00003 - v2") con firmas nuevas; historial de versiones en el detalle.
+- Entradas antiguas sin firma: descargar/reenviar abre /entradas/:id/firmar para generar v1.
+- Admins: edgal1998@gmail.com, ileinn.els@gmail.com.
+
 ## Backlog
 - P0: Fase 2 — configurar variables SMTP (Gmail app password) y probar envío.
 - P1: Selector de fecha localizado en filtros.
