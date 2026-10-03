@@ -2,15 +2,16 @@ from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depend
 from fastapi.responses import Response as RawResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from pymongo import ReturnDocument
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
-from bson import Binary
+from bson import Binary, ObjectId
 import io
+import base64
 import os
 import re
 import uuid
@@ -27,6 +28,7 @@ from pdf_gen import build_pdf, pdf_pages_png  # noqa: E402
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
 db = client[os.environ["DB_NAME"]]
+fs = AsyncIOMotorGridFSBucket(db, bucket_name="pdfs")
 TZ = ZoneInfo("America/Tijuana")
 EMERGENT_SESSION_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 
@@ -68,6 +70,21 @@ class Orden(BaseModel):
     tipo_danio_otro: str = ""
 
 
+class Firma(BaseModel):
+    png: str
+    fecha: str
+
+
+class Firmas(BaseModel):
+    taller: Optional[Firma] = None
+    cliente: Optional[Firma] = None
+    nombre_cliente: str = ""
+
+
+class SignIn(BaseModel):
+    firmas: Firmas
+
+
 class EntryIn(BaseModel):
     cliente: Cliente = Field(default_factory=Cliente)
     vehiculo: Vehiculo = Field(default_factory=Vehiculo)
@@ -78,6 +95,7 @@ class EntryIn(BaseModel):
     fotos: List[str] = Field(default_factory=list)
     comentarios: str = ""
     fecha_ingreso: Optional[str] = None
+    firmas: Optional[Firmas] = None
 
 
 class PreviewIn(EntryIn):
@@ -272,23 +290,67 @@ def validate_required(e: EntryIn):
         raise HTTPException(400, "Máximo 20 fotos por entrada")
 
 
+def validate_firmas(f: Optional[Firmas]) -> dict:
+    if not f or not f.taller or not f.cliente:
+        raise HTTPException(400, "Faltan las firmas del taller y del cliente")
+    for firma in (f.taller, f.cliente):
+        if not firma.png.startswith("data:image/png;base64,") or len(firma.png) > 3_000_000:
+            raise HTTPException(400, "Firma inválida")
+        try:
+            PILImage.open(io.BytesIO(base64.b64decode(firma.png.split(",", 1)[1]))).verify()
+        except Exception:
+            raise HTTPException(400, "Firma inválida")
+    return f.model_dump()
+
+
 def clean(e: EntryIn) -> dict:
-    d = e.model_dump(exclude={"entry_id"} if isinstance(e, PreviewIn) else None)
+    d = e.model_dump(exclude={"entry_id", "firmas"})
     d["inventario"] = {k: max(1, int(v)) for k, v in d["inventario"].items() if v}
     d["vehiculo"]["placas"] = d["vehiculo"]["placas"].strip().upper()
     return d
 
 
-async def make_pdf(entry: dict) -> bytes:
-    return build_pdf(entry, await get_taller(), await load_photos(entry.get("fotos", [])))
+async def make_pdf(entry: dict, firmas: dict, label: str) -> bytes:
+    data = {**entry, "firmas": firmas, "folio_label": label}
+    return build_pdf(data, await get_taller(), await load_photos(entry.get("fotos", [])))
+
+
+def version_label(folio_str: str, v: int) -> str:
+    return folio_str if v == 1 else f"{folio_str} - v{v}"
+
+
+async def create_version(entry: dict, firmas: dict, user: dict) -> dict:
+    v = await db.pdf_versions.count_documents({"entry_id": entry["id"]}) + 1
+    label = version_label(entry["folio_str"], v)
+    pdf = await make_pdf(entry, firmas, label)
+    file_id = await fs.upload_from_stream(f"Entrada_{label}.pdf", pdf, metadata={"entry_id": entry["id"], "version": v})
+    await db.pdf_versions.insert_one({
+        "entry_id": entry["id"], "version": v, "label": label, "file_id": str(file_id), "size": len(pdf),
+        "created_at": now_iso(), "created_by": user["email"], "firmas": firmas})
+    await db.entries.update_one({"id": entry["id"]}, {"$set": {"pdf_version": v, "pdf_label": label}})
+    return {"pdf_version": v, "pdf_label": label}
+
+
+async def get_version(eid: str, v: Optional[int] = None) -> dict:
+    filt = {"entry_id": eid, **({"version": v} if v else {})}
+    doc = await db.pdf_versions.find_one(filt, {"_id": 0, "firmas": 0}, sort=[("version", -1)])
+    if not doc:
+        raise HTTPException(409, "Esta entrada aún no tiene PDF firmado. Captura las firmas.")
+    return doc
+
+
+async def read_pdf(ver: dict) -> bytes:
+    stream = await fs.open_download_stream(ObjectId(ver["file_id"]))
+    return await stream.read()
 
 
 async def try_send(entry: dict) -> dict:
+    ver = await get_version(entry["id"])
     if not mailer.is_configured():
         result = {"mail_status": "no_configurado", "mail_error": None}
     else:
         try:
-            await mailer.send_entry(entry, await get_taller(), await make_pdf(entry))
+            await mailer.send_entry({**entry, "pdf_label": ver["label"]}, await get_taller(), await read_pdf(ver))
             result = {"mail_status": "enviado", "mail_error": None, "mail_sent_at": now_iso()}
         except Exception as ex:
             logger.error("Fallo envío de correo folio %s: %s", entry["folio_str"], type(ex).__name__)
@@ -306,20 +368,23 @@ async def get_entry_or_404(eid: str) -> dict:
 
 @api.post("/entries/preview")
 async def preview(body: PreviewIn, user: dict = Depends(get_user)):
+    firmas = validate_firmas(body.firmas)
     entry = clean(body)
     entry["fecha_ingreso"] = entry.get("fecha_ingreso") or now_iso()
-    entry["folio_str"] = "POR ASIGNAR"
+    label = "POR ASIGNAR"
     if body.entry_id:
         existing = await get_entry_or_404(body.entry_id)
-        entry["folio_str"] = existing["folio_str"]
         entry["fecha_ingreso"] = existing["fecha_ingreso"]
-    pdf = await make_pdf(entry)
+        v = await db.pdf_versions.count_documents({"entry_id": body.entry_id}) + 1
+        label = version_label(existing["folio_str"], v)
+    pdf = await make_pdf(entry, firmas, label)
     return {"pages": pdf_pages_png(pdf), "size_bytes": len(pdf)}
 
 
 @api.post("/entries")
 async def create_entry(body: EntryIn, user: dict = Depends(get_user)):
     validate_required(body)
+    firmas = validate_firmas(body.firmas)
     entry = clean(body)
     counter = await db.counters.find_one_and_update({"_id": "folio"}, {"$inc": {"seq": 1}}, upsert=True,
                                                     return_document=ReturnDocument.AFTER)
@@ -331,6 +396,7 @@ async def create_entry(body: EntryIn, user: dict = Depends(get_user)):
         "mail_status": "pendiente", "mail_error": None,
     })
     await db.entries.insert_one(dict(entry))
+    entry.update(await create_version(entry, firmas, user))
     entry.update(await try_send(entry))
     return entry
 
@@ -361,12 +427,35 @@ async def get_entry(eid: str, user: dict = Depends(get_user)):
 @api.put("/entries/{eid}")
 async def update_entry(eid: str, body: EntryIn, user: dict = Depends(get_user)):
     validate_required(body)
+    firmas = validate_firmas(body.firmas)
     await get_entry_or_404(eid)
     data = clean(body)
     data.pop("fecha_ingreso", None)
     data.update({"updated_at": now_iso(), "updated_by": user["email"]})
     await db.entries.update_one({"id": eid}, {"$set": data})
+    await create_version(await get_entry_or_404(eid), firmas, user)
     return await get_entry_or_404(eid)
+
+
+@api.post("/entries/{eid}/sign")
+async def sign_legacy(eid: str, body: SignIn, user: dict = Depends(get_user)):
+    firmas = validate_firmas(body.firmas)
+    entry = await get_entry_or_404(eid)
+    if await db.pdf_versions.count_documents({"entry_id": eid}):
+        raise HTTPException(409, "Esta entrada ya tiene un PDF firmado")
+    await create_version(entry, firmas, user)
+    return await get_entry_or_404(eid)
+
+
+@api.get("/entries/{eid}/versions")
+async def list_versions(eid: str, user: dict = Depends(get_user)):
+    await get_entry_or_404(eid)
+    return await db.pdf_versions.find({"entry_id": eid}, {"_id": 0, "firmas": 0, "file_id": 0}).sort("version", -1).to_list(200)
+
+
+@api.get("/entries/{eid}/versions/{v}/pdf")
+async def version_pdf(eid: str, v: int, user: dict = Depends(get_user)):
+    return await pdf_response(await get_version(eid, v))
 
 
 @api.patch("/entries/{eid}/estado")
@@ -380,10 +469,13 @@ async def set_estado(eid: str, body: StatusIn, user: dict = Depends(get_user)):
 
 @api.get("/entries/{eid}/pdf")
 async def entry_pdf(eid: str, user: dict = Depends(get_user)):
-    entry = await get_entry_or_404(eid)
-    pdf = await make_pdf(entry)
-    return RawResponse(pdf, media_type="application/pdf",
-                       headers={"Content-Disposition": f'attachment; filename="Entrada_{entry["folio_str"]}.pdf"'})
+    await get_entry_or_404(eid)
+    return await pdf_response(await get_version(eid))
+
+
+async def pdf_response(ver: dict):
+    return RawResponse(await read_pdf(ver), media_type="application/pdf",
+                       headers={"Content-Disposition": f'attachment; filename="Entrada_{ver["label"].replace(" ", "")}.pdf"'})
 
 
 @api.post("/entries/{eid}/send")
@@ -407,6 +499,7 @@ async def startup():
     await db.entries.create_index("id", unique=True)
     await db.photos.create_index("id", unique=True)
     await db.user_sessions.create_index("session_token")
+    await db.pdf_versions.create_index([("entry_id", 1), ("version", 1)], unique=True)
     logger.info("Correo configurado: %s", mailer.is_configured())
 
 

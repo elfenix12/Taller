@@ -26,13 +26,13 @@ export default function Success() {
       <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">{edited ? "Cambios guardados" : "Entrada registrada"}</h1>
       <div className="mt-6 inline-block rounded-2xl border-2 border-[#0F172A] bg-white px-8 py-5">
         <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Folio</div>
-        <div className="font-mono text-5xl font-bold" data-testid="success-folio">{entry.folio_str}</div>
+        <div className="font-mono text-5xl font-bold" data-testid="success-folio">{entry.pdf_label || entry.folio_str}</div>
         <div className="mt-1 text-lg font-bold">{entry.vehiculo.placas} · {entry.cliente.nombre}</div>
         <div className="text-slate-600">{fmtFecha(entry.fecha_ingreso)}</div>
       </div>
       <div className="mt-6 text-left">
         {edited ? (
-          <div className="rounded-xl border-2 border-slate-300 bg-white p-4 font-semibold">PDF regenerado con los cambios. Puedes descargarlo o reenviarlo.</div>
+          <div className="rounded-xl border-2 border-slate-300 bg-white p-4 font-semibold">Se creó la versión nueva del PDF firmado ({entry.pdf_label}). Las versiones anteriores se conservan en el detalle de la entrada.</div>
         ) : <MailStatus entry={entry} />}
       </div>
       <div className="mt-6 grid sm:grid-cols-3 gap-3">

@@ -20,6 +20,7 @@ export const emptyEntry = () => ({
   fotos: [],
   comentarios: "",
   fecha_ingreso: new Date().toISOString(),
+  firmas: null,
 });
 
 export const pickEntry = (e) => {

@@ -1,4 +1,5 @@
 import io
+import base64
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -98,9 +99,9 @@ def _build(entry: dict, taller: dict, photos: list, max_px: int, quality: int) -
 
     logo = Image(str(LOGO), width=0.62 * inch * 882 / 1100, height=0.62 * inch) if LOGO.exists() else P("")
     info = [P(taller["nombre"].upper(), "t"), P(f"Tel. {taller['telefono']}"), P(taller["direccion"])]
-    right = [P("ENTRADA DE VEHÍCULO", "title"), P(f"Folio: <b>{entry.get('folio_str', '')}</b>".replace("<", "<"), "right"),
+    folio = entry.get("folio_label") or entry.get("folio_str", "")
+    right = [P("ENTRADA DE VEHÍCULO", "title"), Paragraph(f"Folio: <b>{folio}</b>", S["right"]),
              P(f"Ingreso: {fmt_fecha(entry.get('fecha_ingreso'))}", "right")]
-    right[1] = Paragraph(f"Folio: <b>{entry.get('folio_str', '')}</b>", S["right"])
     head = Table([[logo, info, right]], colWidths=[0.75 * inch, W * 0.5, W - 0.75 * inch - W * 0.5])
     head.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                               ("LINEBELOW", (0, 0), (-1, 0), 2, BLACK), ("BOTTOMPADDING", (0, 0), (-1, -1), 8)]))
@@ -178,16 +179,42 @@ def _build(entry: dict, taller: dict, photos: list, max_px: int, quality: int) -
     legal = Table([[P(taller["nota_legal"], "bb")]], colWidths=[W])
     legal.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 1.2, BLACK), ("BACKGROUND", (0, 0), (-1, -1), GREY),
                                ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
+    firmas = entry.get("firmas") or {}
+    if not firmas.get("taller") or not firmas.get("cliente"):
+        raise ValueError("El PDF requiere ambas firmas")
     sig_w = (W - 24) / 2
-    sig = Table([["", "", ""], [P("Firma del taller", "bb"), "", P("Firma del cliente", "bb")]],
-                colWidths=[sig_w, 24, sig_w], rowHeights=[70, 18])
-    sig.setStyle(TableStyle([("BOX", (0, 0), (0, 1), 1, BLACK), ("BOX", (2, 0), (2, 1), 1, BLACK),
-                             ("LINEABOVE", (0, 1), (0, 1), 0.6, LINE), ("LINEABOVE", (2, 1), (2, 1), 0.6, LINE),
-                             ("ALIGN", (0, 1), (-1, 1), "CENTER")]))
+    nombre = firmas.get("nombre_cliente") or c.get("nombre") or ""
+    t_box = sig_box(firmas["taller"], "Firma del taller", "", sig_w)
+    c_box = sig_box(firmas["cliente"], "Firma del cliente", nombre, sig_w)
+    sig = Table([[t_box, "", c_box]], colWidths=[sig_w, 24, sig_w])
+    sig.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                             ("RIGHTPADDING", (0, 0), (-1, -1), 0)]))
     story += [KeepTogether([Spacer(1, 6), legal, Spacer(1, 18), sig])]
 
     doc.build(story)
     return buf.getvalue()
+
+
+def sig_box(firma: dict, label: str, nombre, width):
+    raw = base64.b64decode(firma["png"].split(",", 1)[1])
+    im = PILImage.open(io.BytesIO(raw)).convert("RGBA")
+    bbox = im.getchannel("A").getbbox()
+    if bbox:
+        im = im.crop(bbox)
+    buf = io.BytesIO()
+    im.save(buf, "PNG")
+    buf.seek(0)
+    max_w, max_h = width - 16, 66
+    r = min(max_w / im.width, max_h / im.height)
+    rows = [[Image(buf, width=im.width * r, height=im.height * r, mask="auto")], [P(label, "bb")]]
+    if nombre is not None:
+        rows.append([P(nombre)])
+    rows.append([P(f"Firmado: {fmt_fecha(firma['fecha'])}", "small")])
+    t = Table(rows, colWidths=[width], rowHeights=[74] + [None] * (len(rows) - 1))
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 1, BLACK), ("LINEBELOW", (0, 0), (0, 0), 0.6, LINE),
+                           ("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (0, 0), "BOTTOM"),
+                           ("TOPPADDING", (0, 1), (-1, -1), 2), ("BOTTOMPADDING", (0, 1), (-1, -1), 2)]))
+    return t
 
 
 def build_pdf(entry: dict, taller: dict, photos: list) -> bytes:

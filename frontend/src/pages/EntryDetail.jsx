@@ -10,6 +10,7 @@ import { EntrySummary } from "../components/EntrySummary";
 import { EstadoToggle } from "../components/EstadoToggle";
 import { MailStatus } from "../components/MailStatus";
 import { useEntryActions } from "../hooks/useEntryActions";
+import { VersionHistory } from "../components/VersionHistory";
 
 export default function EntryDetail() {
   const { id } = useParams();
@@ -40,7 +41,7 @@ export default function EntryDetail() {
       </button>
       <div className="bg-white border-2 border-[#0F172A] rounded-2xl p-4 sm:p-6 flex flex-wrap items-center gap-4 rise">
         <div className="flex-1 min-w-[220px]">
-          <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Folio <span className="font-mono text-slate-900 text-base" data-testid="detail-folio">{entry.folio_str}</span></div>
+          <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Folio <span className="font-mono text-slate-900 text-base" data-testid="detail-folio">{entry.pdf_label || entry.folio_str}</span></div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight" data-testid="detail-placas">{entry.vehiculo.placas}</h1>
           <div className="text-slate-600 font-medium">Ingreso {fmtFecha(entry.fecha_ingreso)}</div>
         </div>
@@ -56,6 +57,7 @@ export default function EntryDetail() {
         <Btn onClick={() => navigate(`/entradas/${id}/editar`)} data-testid="detail-edit-btn"><Pencil /> Editar entrada</Btn>
       </div>
       <MailStatus entry={entry} />
+      <VersionHistory entry={entry} />
       <EntrySummary data={entry} catalog={catalog} />
     </div>
   );

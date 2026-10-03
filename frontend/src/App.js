@@ -9,6 +9,7 @@ import Inventory from "./pages/Inventory";
 import NewEntry from "./pages/NewEntry";
 import EntryDetail from "./pages/EntryDetail";
 import Success from "./pages/Success";
+import SignEntry from "./pages/SignEntry";
 import Settings from "./pages/Settings";
 
 function Protected({ children }) {
@@ -31,6 +32,7 @@ function AppRouter() {
         <Route path="/nueva" element={<NewEntry />} />
         <Route path="/entradas/:id" element={<EntryDetail />} />
         <Route path="/entradas/:id/editar" element={<NewEntry />} />
+        <Route path="/entradas/:id/firmar" element={<SignEntry />} />
         <Route path="/exito/:id" element={<Success />} />
         <Route path="/configuracion" element={<Settings />} />
       </Route>

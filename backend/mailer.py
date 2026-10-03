@@ -42,7 +42,8 @@ async def send_entry(entry: dict, taller: dict, pdf: bytes) -> None:
     taller_mail = os.environ["MAIL_TALLER"]
     cliente_mail = (entry["cliente"].get("correo") or "").strip()
     msg = EmailMessage()
-    msg["Subject"] = f"Entrada de vehículo - Folio {entry['folio_str']} - {entry['vehiculo'].get('placas', '')}"
+    label = entry.get("pdf_label") or entry["folio_str"]
+    msg["Subject"] = f"Entrada de vehículo - Folio {label} - {entry['vehiculo'].get('placas', '')}"
     msg["From"] = f"{os.environ['MAIL_FROM_NAME']} <{os.environ['SMTP_USER']}>"
     if cliente_mail:
         msg["To"] = cliente_mail
@@ -51,6 +52,6 @@ async def send_entry(entry: dict, taller: dict, pdf: bytes) -> None:
         msg["To"] = taller_mail
     msg.set_content(_body(entry, taller))
     msg.add_attachment(pdf, maintype="application", subtype="pdf",
-                       filename=f"Entrada_{entry['folio_str']}.pdf")
+                       filename=f"Entrada_{label.replace(' ', '')}.pdf")
     await asyncio.to_thread(_send_sync, msg)
     logger.info("Correo enviado folio %s", entry["folio_str"])
