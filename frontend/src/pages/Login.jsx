@@ -25,7 +25,7 @@ export default function Login() {
         <span className="text-slate-500 text-sm">Uso exclusivo del personal autorizado</span>
       </div>
       <div className="flex flex-col items-center justify-center px-6 py-12 rise">
-        <img src="/logo-ccp.png" alt="Central de Carrocería y Pintura" className="w-40 sm:w-48" data-testid="login-logo" />
+        <img src="/logo-ccp.png?v=2" alt="Central de Carrocería y Pintura" className="w-40 sm:w-48" data-testid="login-logo" />
         <h1 className="mt-8 text-3xl sm:text-4xl font-extrabold tracking-tight text-center">Entrada de vehículos</h1>
         <p className="mt-2 text-slate-600 text-base sm:text-lg text-center">Inicia sesión con tu cuenta de Google autorizada</p>
         {error && (

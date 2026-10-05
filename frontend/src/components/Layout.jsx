@@ -14,7 +14,7 @@ export default function Layout() {
       <header className="sticky top-0 z-40 bg-white border-b-2 border-[#0F172A]">
         <div className="max-w-6xl mx-auto h-20 px-3 sm:px-6 flex items-center gap-3">
           <NavLink to="/" className="flex items-center gap-3 min-w-0" data-testid="header-logo-link">
-            <img src="/logo-mark.png" alt="CCP" className="h-12 w-auto" />
+            <img src="/logo-mark.png?v=2" alt="CCP" className="h-12 w-auto" />
             <div className="hidden md:block leading-tight min-w-0">
               <div className="font-display font-extrabold text-lg truncate">{settings?.nombre}</div>
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Entrada de vehículos</div>
